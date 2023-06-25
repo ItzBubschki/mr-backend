@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"log"
 	"mr-backend/main/Handlers"
 	"net/http"
@@ -17,11 +19,20 @@ func main() {
 	inspectHandler := &Handlers.InspectHandler{
 		Mongo: mongoHandler,
 	}
-	// Register request handlers
-	http.Handle("/search", searchHandler)
-	http.Handle("/inspect", inspectHandler)
 
-	// Start the server
+	// Create a new router
+	router := mux.NewRouter()
+
+	// Register request handlers
+	router.Handle("/search", searchHandler)
+	router.Handle("/inspect", inspectHandler)
+
+	// Enable CORS
+	allowedHeaders := handlers.AllowedHeaders([]string{"Content-Type"})
+	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:19000"}) // Update with your frontend origin
+	allowedMethods := handlers.AllowedMethods([]string{"GET"})
+
+	// Start the server with CORS enabled
 	log.Println("Server listening on http://localhost:8080/")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(allowedHeaders, allowedOrigins, allowedMethods)(router)))
 }

@@ -32,7 +32,7 @@ func (s *SearchHandler) searchForTerm(search string) []MovieResponse {
 	body, _ := io.ReadAll(res.Body)
 
 	var movieResponse externalSearchMovieResponse
-	log.Println("Response body:", string(body))
+	log.Println("Got movies from api")
 	err := json.Unmarshal(body, &movieResponse)
 	if err != nil {
 		return []MovieResponse{}
