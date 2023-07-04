@@ -29,7 +29,7 @@ func main() {
 
 	// Enable CORS
 	allowedHeaders := handlers.AllowedHeaders([]string{"Content-Type"})
-	allowedOrigins := handlers.AllowedOrigins([]string{"https://screensociety.de"}) // Update with your frontend origin
+	allowedOrigins := handlers.AllowedOrigins([]string{"https://screensociety.de", "https://www.screensociety.de"})
 	allowedMethods := handlers.AllowedMethods([]string{"GET"})
 
 	// Start the server with CORS enabled
