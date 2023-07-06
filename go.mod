@@ -2,10 +2,7 @@ module mr-backend
 
 go 1.20
 
-require (
-	github.com/rs/cors v1.9.0
-	go.mongodb.org/mongo-driver v1.12.0
-)
+require go.mongodb.org/mongo-driver v1.12.0
 
 require (
 	github.com/golang/snappy v0.0.1 // indirect

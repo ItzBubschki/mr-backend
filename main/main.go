@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/rs/cors"
 	"log"
 	"mr-backend/main/Handlers"
 	"net/http"
@@ -26,9 +25,7 @@ func main() {
 	mux.Handle("/search", searchHandler)
 	mux.Handle("/inspect", inspectHandler)
 
-	handler := cors.Default().Handler(mux)
-
 	// Start the server with CORS enabled
 	log.Println("Server listening on http://localhost:8080/")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
