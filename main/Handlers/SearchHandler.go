@@ -57,6 +57,7 @@ func (s *SearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Set response headers and write JSON response
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(jsonResponse)
 	if err != nil {
