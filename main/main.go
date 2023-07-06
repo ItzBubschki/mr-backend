@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"log"
 	"mr-backend/main/Handlers"
 	"net/http"
@@ -27,12 +27,13 @@ func main() {
 	router.Handle("/search", searchHandler)
 	router.Handle("/inspect", inspectHandler)
 
-	// Enable CORS
-	allowedHeaders := handlers.AllowedHeaders([]string{"Content-Type"})
-	allowedOrigins := handlers.AllowedOrigins([]string{"https://screensociety.de", "https://www.screensociety.de"})
-	allowedMethods := handlers.AllowedMethods([]string{"GET"})
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"https://www.screensociety.de", "https://screensociety.de"},
+	})
+
+	handler := c.Handler(router)
 
 	// Start the server with CORS enabled
 	log.Println("Server listening on http://localhost:8080/")
-	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(allowedHeaders, allowedOrigins, allowedMethods)(router)))
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
