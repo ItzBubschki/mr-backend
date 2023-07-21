@@ -106,6 +106,10 @@ func (rh *RestoreHandler) restoreUserFriends(newUserId string, friends []string)
 }
 
 func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	//get the jwt auth token from the header
 	idToken := r.Header.Get("Authorization")
 	if idToken == "" {
