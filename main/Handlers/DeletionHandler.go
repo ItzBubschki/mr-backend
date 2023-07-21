@@ -138,6 +138,14 @@ func (d *DeletionHandler) removeUserFromFieldInQuery(query firestore.Query, fiel
 }
 
 func (d *DeletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte("OK"))
+		if err != nil {
+			log.Printf("Failed to write response: %v", err)
+		}
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
