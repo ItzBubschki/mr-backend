@@ -39,7 +39,7 @@ func (rh *RestoreHandler) restoreUserData(newUserId, oldUserId string) {
 		log.Printf("Failed to get user: %v", err)
 		return
 	}
-	_, err = rh.FireStore.Collection("Users").Doc(newUserId).Set(context.Background(), userData.Data())
+	_, err = rh.FireStore.Collection("Users").Doc(newUserId).Set(context.Background(), userData.Data(), firestore.MergeAll)
 	if err != nil {
 		log.Printf("Failed to restore user: %v", err)
 		return
