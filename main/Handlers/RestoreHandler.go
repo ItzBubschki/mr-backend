@@ -105,6 +105,11 @@ func (rh *RestoreHandler) restoreUserFriends(newUserId string, friends []string)
 	}
 }
 
+func (rh *RestoreHandler) checkIfRestoreAvailable(email string) bool {
+	id, _ := rh.retrieveOldUserData(email)
+	return id != ""
+}
+
 func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
@@ -113,8 +118,24 @@ func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Failed to write response: %v", err)
 		}
 		return
-	}
-	if r.Method != http.MethodPost {
+	} else if r.Method == http.MethodGet {
+		available := rh.checkIfRestoreAvailable(r.URL.Query().Get("email"))
+		if available {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte("OK"))
+			if err != nil {
+				log.Printf("Failed to write response: %v", err)
+			}
+			return
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			_, err := w.Write([]byte("Not found"))
+			if err != nil {
+				log.Printf("Failed to write response: %v", err)
+			}
+			return
+		}
+	} else if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
