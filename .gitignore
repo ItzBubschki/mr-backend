@@ -1,2 +1,10 @@
 .idea/
 Consts.go
+/main/serviceAccountKey.json
+*.log
+/data
+ratings.json
+users.json
+firebase.*
+firestore.*
+.firebaserc

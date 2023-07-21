@@ -2,11 +2,11 @@ package Handlers
 
 import (
 	"context"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
-	"log"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 )
 
 type MongoHandler struct {
@@ -14,9 +14,11 @@ type MongoHandler struct {
 	collection *mongo.Collection
 }
 
-func NewMongoHandler() (*MongoHandler, error) {
+func NewMongoHandler(mongoHost string) (*MongoHandler, error) {
+	//use a flag for the mongo host
+
 	// Connect to MongoDB
-	clientOptions := options.Client().ApplyURI("mongodb://mongo:27017")
+	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:27017", mongoHost))
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		return nil, err
