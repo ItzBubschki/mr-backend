@@ -1,4 +1,4 @@
-package Handlers
+package MovieHandlers
 
 type MovieResponse struct {
 	Type          string

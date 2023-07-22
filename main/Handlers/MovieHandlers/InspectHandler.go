@@ -1,7 +1,8 @@
-package Handlers
+package MovieHandlers
 
 import (
 	"encoding/json"
+	"github.com/ItzBubschki/mr-backend/main/Handlers"
 	"io"
 	"log"
 	"net/http"
@@ -16,10 +17,10 @@ type InspectHandler struct {
 }
 
 func (i *InspectHandler) searchForSingleMovie(movieId string) MovieResponse {
-	url := inspectUrl + movieId
+	url := Handlers.InspectUrl + movieId
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("x-rapidapi-key", apiKey)
-	req.Header.Add("x-rapidapi-host", apiHost)
+	req.Header.Add("x-rapidapi-key", Handlers.ApiKey)
+	req.Header.Add("x-rapidapi-host", Handlers.ApiHost)
 
 	res, _ := http.DefaultClient.Do(req)
 

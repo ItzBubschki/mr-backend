@@ -1,4 +1,4 @@
-package Handlers
+package FirebaseHandlers
 
 import (
 	"cloud.google.com/go/firestore"
@@ -13,25 +13,6 @@ import (
 type DeletionHandler struct {
 	AuthHandler *auth.Client
 	FireStore   *firestore.Client
-}
-
-type Rating struct {
-	UserId    string    `firestore:"userId"`
-	MovieId   string    `firestore:"movieId"`
-	Rating    float64   `firestore:"rating"`
-	Comment   string    `firestore:"comment"`
-	Timestamp time.Time `firestore:"timestamp"`
-	ExpiresAt time.Time `firestore:"expiresAt,omitempty"`
-}
-
-type User struct {
-	Email          string    `firestore:"email"`
-	Friends        []string  `firestore:"friends,omitempty"`
-	Name           string    `firestore:"name"`
-	Picture        string    `firestore:"picture"`
-	RatedMovies    []string  `firestore:"ratedMovies,omitempty"`
-	FriendRequests []string  `firestore:"friendRequests,omitempty"`
-	ExpiresAt      time.Time `firestore:"expiresAt,omitempty"`
 }
 
 func (d *DeletionHandler) moveUserRatings(userId string) {
@@ -139,7 +120,6 @@ func (d *DeletionHandler) removeUserFromFieldInQuery(query firestore.Query, fiel
 
 func (d *DeletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("OK"))
 		if err != nil {
 			log.Printf("Failed to write response: %v", err)

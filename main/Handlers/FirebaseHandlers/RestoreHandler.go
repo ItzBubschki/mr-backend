@@ -1,4 +1,4 @@
-package Handlers
+package FirebaseHandlers
 
 import (
 	"cloud.google.com/go/firestore"
@@ -112,7 +112,6 @@ func (rh *RestoreHandler) checkIfRestoreAvailable(email string) bool {
 
 func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("OK"))
 		if err != nil {
 			log.Printf("Failed to write response: %v", err)
@@ -121,7 +120,6 @@ func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == http.MethodGet {
 		available := rh.checkIfRestoreAvailable(r.URL.Query().Get("email"))
 		if available {
-			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("OK"))
 			if err != nil {
 				log.Printf("Failed to write response: %v", err)

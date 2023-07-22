@@ -4,7 +4,8 @@ import (
 	"context"
 	firebase "firebase.google.com/go/v4"
 	"flag"
-	"github.com/ItzBubschki/mr-backend/main/Handlers"
+	"github.com/ItzBubschki/mr-backend/main/Handlers/FirebaseHandlers"
+	"github.com/ItzBubschki/mr-backend/main/Handlers/MovieHandlers"
 	"google.golang.org/api/option"
 	"log"
 	"net/http"
@@ -15,7 +16,7 @@ func main() {
 	mongoHost := flag.String("mongoHost", "mongo", "the host of the mongo database")
 	emulator := flag.Bool("emulator", false, "whether to use the firebase emulator")
 	flag.Parse()
-	mongoHandler, err := Handlers.NewMongoHandler(*mongoHost)
+	mongoHandler, err := MovieHandlers.NewMongoHandler(*mongoHost)
 	if err != nil {
 		log.Fatal("Failed to create MongoHandler:", err)
 	}
@@ -40,17 +41,21 @@ func main() {
 		log.Fatalf("error getting Firestore client: %v\n", err)
 	}
 
-	searchHandler := &Handlers.SearchHandler{
+	searchHandler := &MovieHandlers.SearchHandler{
 		Mongo: mongoHandler,
 	}
-	inspectHandler := &Handlers.InspectHandler{
+	inspectHandler := &MovieHandlers.InspectHandler{
 		Mongo: mongoHandler,
 	}
-	deletionHandler := &Handlers.DeletionHandler{
+	deletionHandler := &FirebaseHandlers.DeletionHandler{
 		AuthHandler: authHandler,
 		FireStore:   firestoreHandler,
 	}
-	restoreHandler := &Handlers.RestoreHandler{
+	restoreHandler := &FirebaseHandlers.RestoreHandler{
+		AuthHandler: authHandler,
+		FireStore:   firestoreHandler,
+	}
+	friendHandler := &FirebaseHandlers.FriendHandler{
 		AuthHandler: authHandler,
 		FireStore:   firestoreHandler,
 	}
@@ -63,6 +68,11 @@ func main() {
 	mux.Handle("/inspect", inspectHandler)
 	mux.Handle("/delete", deletionHandler)
 	mux.Handle("/restore", restoreHandler)
+	mux.HandleFunc("/revoke", friendHandler.RevokeRequestWrapper)
+	mux.HandleFunc("/accept", friendHandler.AcceptRequestWrapper)
+	mux.HandleFunc("/send", friendHandler.SendRequestWrapper)
+	mux.HandleFunc("/remove", friendHandler.RemoveFriendWrapper)
+	mux.HandleFunc("/decline", friendHandler.DeclineRequestWrapper)
 	http.Handle("/", mux)
 
 	log.Println("Server listening on http://localhost:8080/")
