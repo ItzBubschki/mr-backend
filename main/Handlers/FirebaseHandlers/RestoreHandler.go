@@ -7,6 +7,7 @@ import (
 	"google.golang.org/api/iterator"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type RestoreHandler struct {
@@ -39,7 +40,16 @@ func (rh *RestoreHandler) restoreUserData(newUserId, oldUserId string) {
 		log.Printf("Failed to get user: %v", err)
 		return
 	}
-	_, err = rh.FireStore.Collection("Users").Doc(newUserId).Set(context.Background(), userData.Data(), firestore.MergeAll)
+	var user User
+	err = userData.DataTo(&user)
+	if err != nil {
+		log.Printf("Failed to convert data: %v", err)
+		return
+	}
+	if strings.HasPrefix(user.Picture, "https://firebasestorage") {
+		user.Picture = ""
+	}
+	_, err = rh.FireStore.Collection("Users").Doc(newUserId).Set(context.Background(), user, firestore.MergeAll)
 	if err != nil {
 		log.Printf("Failed to restore user: %v", err)
 		return
