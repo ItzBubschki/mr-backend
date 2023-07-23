@@ -88,7 +88,11 @@ func (f *FriendHandler) sendFriendRequest(userId, friendId string) (int, string)
 		return 400, "friend request already sent"
 	}
 	if Handlers.ArrayContains(parsed.user.FriendRequests, friendId) {
-		return f.acceptFriendRequest(userId, friendId) //user already has a friend request from that person, so we just accept it
+		code, message := f.acceptFriendRequest(userId, friendId) //user already has a friend request from that person, so we just accept it
+		if code != 200 {
+			return code, message
+		}
+		return 210, "Ok"
 	}
 	_, err := parsed.friendRef.Update(context.Background(), []firestore.Update{{Path: "friendRequests", Value: firestore.ArrayUnion(userId)}})
 	if err != nil {
