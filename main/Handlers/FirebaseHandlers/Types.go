@@ -20,4 +20,5 @@ type User struct {
 	FriendRequests   []string  `firestore:"friendRequests,omitempty"`
 	OutgoingRequests []string  `firestore:"outgoingRequests,omitempty"`
 	ExpiresAt        time.Time `firestore:"expiresAt,omitempty"`
+	FcmToken         string    `firestore:"fcmToken,omitempty"`
 }

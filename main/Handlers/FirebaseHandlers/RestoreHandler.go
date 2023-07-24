@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"firebase.google.com/go/v4/auth"
+	"github.com/ItzBubschki/mr-backend/main/Handlers"
 	"google.golang.org/api/iterator"
 	"log"
 	"net/http"
@@ -121,13 +122,7 @@ func (rh *RestoreHandler) checkIfRestoreAvailable(email string) bool {
 }
 
 func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		_, err := w.Write([]byte("OK"))
-		if err != nil {
-			log.Printf("Failed to write response: %v", err)
-		}
-		return
-	} else if r.Method == http.MethodGet {
+	if r.Method == http.MethodGet {
 		available := rh.checkIfRestoreAvailable(r.URL.Query().Get("email"))
 		if available {
 			_, err := w.Write([]byte("OK"))
@@ -143,22 +138,18 @@ func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-	} else if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+
+	authorized, token := Handlers.AuthorizationWrapper(w, r, rh.AuthHandler)
+	if !authorized {
 		return
 	}
-	//get the jwt auth token from the header
-	idToken := r.Header.Get("Authorization")
-	if idToken == "" {
-		log.Println("No token found")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+
+	friendId := r.URL.Query().Get("friendId")
+	if friendId == "" {
+		http.Error(w, "Missing friendId", http.StatusBadRequest)
 	}
-	token, err := rh.AuthHandler.VerifyIDToken(context.Background(), idToken)
-	if err != nil {
-		log.Printf("error verifying ID token: %v\n", err)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	}
+
 	if token.Claims["email_verified"] != true {
 		log.Println("Email not verified")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -177,7 +168,7 @@ func (rh *RestoreHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//respond with 200 OK
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte("OK"))
+	_, err := w.Write([]byte("OK"))
 	if err != nil {
 		return
 	}

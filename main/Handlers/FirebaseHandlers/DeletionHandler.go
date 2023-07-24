@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"firebase.google.com/go/v4/auth"
+	"github.com/ItzBubschki/mr-backend/main/Handlers"
 	"google.golang.org/api/iterator"
 	"log"
 	"net/http"
@@ -119,37 +120,17 @@ func (d *DeletionHandler) removeUserFromFieldInQuery(query firestore.Query, fiel
 }
 
 func (d *DeletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		_, err := w.Write([]byte("OK"))
-		if err != nil {
-			log.Printf("Failed to write response: %v", err)
-		}
+	authorized, token := Handlers.AuthorizationWrapper(w, r, d.AuthHandler)
+	if !authorized {
 		return
 	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	//get the jwt auth token from the header
-	idToken := r.Header.Get("Authorization")
-	if idToken == "" {
-		log.Println("No token found")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-	token, err := d.AuthHandler.VerifyIDToken(context.Background(), idToken)
-	if err != nil {
-		log.Printf("error verifying ID token: %v\n", err)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	}
-	log.Printf("Verified ID token: %v\n", token)
 
 	d.moveUserRatings(token.UID)
 	d.moveUserData(token.UID)
 	d.removeUserFromFriends(token.UID)
 	//respond with 200 OK
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte("OK"))
+	_, err := w.Write([]byte("OK"))
 	if err != nil {
 		return
 	}

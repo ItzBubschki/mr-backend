@@ -41,6 +41,11 @@ func main() {
 		log.Fatalf("error getting Firestore client: %v\n", err)
 	}
 
+	messagingHandler, err := app.Messaging(context.Background())
+	if err != nil {
+		log.Fatalf("error getting Messaging client: %v\n", err)
+	}
+
 	searchHandler := &MovieHandlers.SearchHandler{
 		Mongo: mongoHandler,
 	}
@@ -55,9 +60,16 @@ func main() {
 		AuthHandler: authHandler,
 		FireStore:   firestoreHandler,
 	}
+	fcmHandler := &FirebaseHandlers.FcmHandler{
+		AuthHandler:  authHandler,
+		FireStore:    firestoreHandler,
+		Messaging:    messagingHandler,
+		MongoHandler: mongoHandler,
+	}
 	friendHandler := &FirebaseHandlers.FriendHandler{
 		AuthHandler: authHandler,
 		FireStore:   firestoreHandler,
+		FcmHandler:  fcmHandler,
 	}
 
 	// Create a new router
@@ -73,6 +85,8 @@ func main() {
 	mux.HandleFunc("/send", friendHandler.SendRequestWrapper)
 	mux.HandleFunc("/remove", friendHandler.RemoveFriendWrapper)
 	mux.HandleFunc("/decline", friendHandler.DeclineRequestWrapper)
+	mux.HandleFunc("/addedToken", fcmHandler.AddedTokenWrapper)
+	mux.HandleFunc("/ratedMovie", fcmHandler.RatedMovieWrapper)
 	http.Handle("/", mux)
 
 	log.Println("Server listening on http://localhost:8080/")

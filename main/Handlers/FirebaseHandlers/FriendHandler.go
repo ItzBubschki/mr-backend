@@ -12,6 +12,7 @@ import (
 type FriendHandler struct {
 	AuthHandler *auth.Client
 	FireStore   *firestore.Client
+	FcmHandler  *FcmHandler
 }
 
 type parseResponse struct {
@@ -19,35 +20,6 @@ type parseResponse struct {
 	code               int
 	message            string
 	userRef, friendRef *firestore.DocumentRef
-}
-
-func (f *FriendHandler) authorizationWrapper(w http.ResponseWriter, r *http.Request) (bool, string, string) {
-	if r.Method == http.MethodOptions {
-		_, _ = w.Write([]byte("OK"))
-		return false, "", ""
-	} else if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return false, "", ""
-	}
-	idToken := r.Header.Get("Authorization")
-	if idToken == "" {
-		log.Println("No token found")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return false, "", ""
-	}
-	token, err := f.AuthHandler.VerifyIDToken(context.Background(), idToken)
-	if err != nil {
-		log.Printf("error verifying ID token: %v\n", err)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return false, "", ""
-	}
-
-	friendId := r.URL.Query().Get("friendId")
-	if friendId == "" {
-		http.Error(w, "Missing friendId", http.StatusBadRequest)
-		return false, "", ""
-	}
-	return true, token.UID, friendId
 }
 
 func (f *FriendHandler) getAndParse(userId, friendId string) parseResponse {
@@ -137,6 +109,9 @@ func (f *FriendHandler) acceptFriendRequest(userId, friendId string) (int, strin
 		log.Printf("Failed to update friend: %v", err)
 		return 500, "Internal Server Error"
 	}
+	f.FcmHandler.SubscribeToUser(parsed.friend.FcmToken, userId)
+	f.FcmHandler.SubscribeToUser(parsed.user.FcmToken, friendId)
+
 	return 200, "Ok"
 }
 
@@ -179,6 +154,8 @@ func (f *FriendHandler) removeFriend(userId, friendId string) (int, string) {
 		log.Printf("Failed to update friend: %v", err)
 		return 500, "Internal Server Error"
 	}
+	f.FcmHandler.UnsubscribeFromUser(parsed.friend.FcmToken, userId)
+	f.FcmHandler.UnsubscribeFromUser(parsed.user.FcmToken, friendId)
 	return 200, "Ok"
 }
 
@@ -204,56 +181,80 @@ func (f *FriendHandler) revokeFriendRequest(userId, friendId string) (int, strin
 }
 
 func (f *FriendHandler) RevokeRequestWrapper(w http.ResponseWriter, r *http.Request) {
-	authorized, uid, friendId := f.authorizationWrapper(w, r)
+	authorized, token := Handlers.AuthorizationWrapper(w, r, f.AuthHandler)
 	if !authorized {
 		return
 	}
 
-	code, message := f.revokeFriendRequest(uid, friendId)
+	friendId := r.URL.Query().Get("friendId")
+	if friendId == "" {
+		http.Error(w, "Missing friendId", http.StatusBadRequest)
+	}
+
+	code, message := f.revokeFriendRequest(token.UID, friendId)
 	w.WriteHeader(code)
 	_, _ = w.Write([]byte(message))
 }
 
 func (f *FriendHandler) AcceptRequestWrapper(w http.ResponseWriter, r *http.Request) {
-	authorized, uid, friendId := f.authorizationWrapper(w, r)
+	authorized, token := Handlers.AuthorizationWrapper(w, r, f.AuthHandler)
 	if !authorized {
 		return
 	}
 
-	code, message := f.acceptFriendRequest(uid, friendId)
+	friendId := r.URL.Query().Get("friendId")
+	if friendId == "" {
+		http.Error(w, "Missing friendId", http.StatusBadRequest)
+	}
+
+	code, message := f.acceptFriendRequest(token.UID, friendId)
 	w.WriteHeader(code)
 	_, _ = w.Write([]byte(message))
 }
 
 func (f *FriendHandler) DeclineRequestWrapper(w http.ResponseWriter, r *http.Request) {
-	authorized, uid, friendId := f.authorizationWrapper(w, r)
+	authorized, token := Handlers.AuthorizationWrapper(w, r, f.AuthHandler)
 	if !authorized {
 		return
 	}
 
-	code, message := f.declineFriendRequest(uid, friendId)
+	friendId := r.URL.Query().Get("friendId")
+	if friendId == "" {
+		http.Error(w, "Missing friendId", http.StatusBadRequest)
+	}
+
+	code, message := f.declineFriendRequest(token.UID, friendId)
 	w.WriteHeader(code)
 	_, _ = w.Write([]byte(message))
 }
 
 func (f *FriendHandler) RemoveFriendWrapper(w http.ResponseWriter, r *http.Request) {
-	authorized, uid, friendId := f.authorizationWrapper(w, r)
+	authorized, token := Handlers.AuthorizationWrapper(w, r, f.AuthHandler)
 	if !authorized {
 		return
 	}
 
-	code, message := f.removeFriend(uid, friendId)
+	friendId := r.URL.Query().Get("friendId")
+	if friendId == "" {
+		http.Error(w, "Missing friendId", http.StatusBadRequest)
+	}
+
+	code, message := f.removeFriend(token.UID, friendId)
 	w.WriteHeader(code)
 	_, _ = w.Write([]byte(message))
 }
 
 func (f *FriendHandler) SendRequestWrapper(w http.ResponseWriter, r *http.Request) {
-	authorized, uid, friendId := f.authorizationWrapper(w, r)
+	authorized, token := Handlers.AuthorizationWrapper(w, r, f.AuthHandler)
 	if !authorized {
 		return
 	}
 
-	code, message := f.sendFriendRequest(uid, friendId)
+	friendId := r.URL.Query().Get("friendId")
+	if friendId == "" {
+		http.Error(w, "Missing friendId", http.StatusBadRequest)
+	}
+	code, message := f.sendFriendRequest(token.UID, friendId)
 	w.WriteHeader(code)
 	_, _ = w.Write([]byte(message))
 }
