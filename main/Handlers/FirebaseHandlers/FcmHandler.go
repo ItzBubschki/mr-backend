@@ -94,7 +94,7 @@ func (fcm *FcmHandler) sendNotificationToFriends(userId, movieId string) {
 		Topic:        userId,
 		Notification: &messaging.Notification{},
 		Data: map[string]string{
-			"title":   fmt.Sprintf("%s rated a new movie", user.Name),
+			"title":   fmt.Sprintf("%s rated something.", user.Name),
 			"message": fmt.Sprintf("%s rated %s. See what they thought!", user.Name, title),
 			"body":    string(data),
 		},
