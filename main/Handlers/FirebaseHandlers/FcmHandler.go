@@ -123,7 +123,7 @@ func (fcm *FcmHandler) handleRatingEvent(rating RatingEvent) {
 	log.Printf("Sending notification for rating: %v in 5 minutes", rating)
 	// Schedule the notification to be sent after 5 minutes.
 	fcm.userRatings[rating.UserID] = rating
-	time.AfterFunc(10*time.Second, func() {
+	time.AfterFunc(5*time.Minute, func() {
 		fcm.mutex.Lock()
 		defer fcm.mutex.Unlock()
 
