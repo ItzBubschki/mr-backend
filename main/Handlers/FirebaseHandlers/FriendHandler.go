@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"firebase.google.com/go/v4/auth"
+	"fmt"
 	"github.com/ItzBubschki/mr-backend/main/Handlers"
 	"log"
 	"net/http"
@@ -71,6 +72,7 @@ func (f *FriendHandler) sendFriendRequest(userId, friendId string) (int, string)
 		log.Printf("Failed to update friend: %v", err)
 		return 500, "Internal Server Error"
 	}
+	f.FcmHandler.SendNotification(parsed.friend.FcmToken, fmt.Sprintf("%s sent you a friend request", parsed.user.Name))
 	_, err = parsed.userRef.Update(context.Background(), []firestore.Update{{Path: "outgoingRequests", Value: firestore.ArrayUnion(friendId)}})
 	if err != nil {
 		log.Printf("Failed to update user: %v", err)
@@ -111,6 +113,7 @@ func (f *FriendHandler) acceptFriendRequest(userId, friendId string) (int, strin
 	}
 	f.FcmHandler.SubscribeToUser(parsed.friend.FcmToken, userId)
 	f.FcmHandler.SubscribeToUser(parsed.user.FcmToken, friendId)
+	f.FcmHandler.SendNotification(parsed.friend.FcmToken, fmt.Sprintf("%s accepted your friend request", parsed.user.Name))
 
 	return 200, "Ok"
 }

@@ -25,9 +25,10 @@ type FcmHandler struct {
 }
 
 type RatingEvent struct {
-	UserID   string // The ID of the user who rated the movie
-	MovieID  string // The ID of the movie rated
+	UserID   string
+	MovieID  string
 	DateTime time.Time
+	Multiple bool
 }
 
 type MessageData struct {
@@ -59,6 +60,7 @@ func (fcm *FcmHandler) SubscribeToUser(token, friendId string) {
 	}
 
 	fmt.Println(response.SuccessCount, "tokens were subscribed successfully")
+	log.Printf("%v tokens were not subscribed", response.FailureCount)
 }
 
 func (fcm *FcmHandler) UnsubscribeFromUser(token, topic string) {
@@ -67,18 +69,36 @@ func (fcm *FcmHandler) UnsubscribeFromUser(token, topic string) {
 	}
 	response, err := fcm.Messaging.UnsubscribeFromTopic(context.Background(), []string{token}, topic)
 	if err != nil {
-		log.Fatalln(err)
+		log.Printf("Failed to unsubscribe from topic: %v", err)
 	}
 
 	fmt.Println(response.SuccessCount, "tokens were unsubscribed successfully")
+	log.Printf("%v tokens were not subscribed", response.FailureCount)
 }
 
-func (fcm *FcmHandler) sendNotificationToFriends(userId, movieId string) {
-	user := fcm.getUserInfo(userId)
+func (fcm *FcmHandler) SendNotification(token, content string) {
+	if token == "" {
+		return
+	}
+	result, err := fcm.Messaging.Send(context.Background(), &messaging.Message{
+		Token: token,
+		Data: map[string]string{
+			"title": content,
+		},
+	})
+	if err != nil {
+		log.Printf("Failed to send notification: %v", err)
+		return
+	}
+	log.Printf("Successfully sent notification: %v", result)
+}
+
+func (fcm *FcmHandler) sendNotificationToFriends(rating RatingEvent) {
+	user := fcm.getUserInfo(rating.UserID)
 	if user.Friends == nil {
 		return
 	}
-	movieInfo, err := fcm.MongoHandler.FetchFromCache(movieId)
+	movieInfo, err := fcm.MongoHandler.FetchFromCache(rating.MovieID)
 	if err != nil {
 		log.Printf("Failed to fetch movie: %v", err)
 	}
@@ -86,16 +106,21 @@ func (fcm *FcmHandler) sendNotificationToFriends(userId, movieId string) {
 	if movieInfo.Title != "" {
 		title = movieInfo.Title
 	} else {
-		title = movieId
+		title = rating.MovieID
 	}
 
-	data, _ := json.Marshal(MessageData{Link: fmt.Sprintf("/profile/inspect/%s?from=/", userId)})
+	data, _ := json.Marshal(MessageData{Link: fmt.Sprintf("/profile/inspect/%s?from=/", rating.UserID)})
+	var content string
+	if rating.Multiple {
+		content = fmt.Sprintf("%s rated %s and more. See what they thought!.", user.Name, title)
+	} else {
+		content = fmt.Sprintf("%s rated %s. See what they thought!", user.Name, title)
+	}
 	result, err := fcm.Messaging.Send(context.Background(), &messaging.Message{
-		Topic:        userId,
-		Notification: &messaging.Notification{},
+		Topic: rating.UserID,
 		Data: map[string]string{
 			"title":   fmt.Sprintf("%s rated something.", user.Name),
-			"message": fmt.Sprintf("%s rated %s. See what they thought!", user.Name, title),
+			"message": content,
 			"body":    string(data),
 		},
 	})
@@ -115,8 +140,9 @@ func (fcm *FcmHandler) handleRatingEvent(rating RatingEvent) {
 
 	// Check if the user has rated a movie within the last 5 minutes.
 	lastRating, ok := fcm.userRatings[rating.UserID]
-	if ok && time.Since(lastRating.DateTime) < 10*time.Second {
+	if ok && time.Since(lastRating.DateTime) < 5*time.Minute {
 		fmt.Println("Notification already scheduled.")
+		lastRating.Multiple = true
 		return
 	}
 
@@ -131,7 +157,7 @@ func (fcm *FcmHandler) handleRatingEvent(rating RatingEvent) {
 		storedRating, ok := fcm.userRatings[rating.UserID]
 		if ok && storedRating == rating {
 			// Send push notification to the user's friends' topics.
-			fcm.sendNotificationToFriends(rating.UserID, rating.MovieID)
+			fcm.sendNotificationToFriends(rating)
 
 			// Remove the stored rating to avoid sending duplicate notifications.
 			delete(fcm.userRatings, rating.UserID)
