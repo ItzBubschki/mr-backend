@@ -72,7 +72,7 @@ func (f *FriendHandler) sendFriendRequest(userId, friendId string) (int, string)
 		log.Printf("Failed to update friend: %v", err)
 		return 500, "Internal Server Error"
 	}
-	f.FcmHandler.SendNotification(parsed.friend.FcmToken, fmt.Sprintf("%s sent you a friend request", parsed.user.Name))
+	f.FcmHandler.SendNotification(parsed.friend.FcmToken, fmt.Sprintf("%s sent you a friend request", parsed.user.Name), "/requests?from=/profile")
 	_, err = parsed.userRef.Update(context.Background(), []firestore.Update{{Path: "outgoingRequests", Value: firestore.ArrayUnion(friendId)}})
 	if err != nil {
 		log.Printf("Failed to update user: %v", err)
@@ -113,7 +113,7 @@ func (f *FriendHandler) acceptFriendRequest(userId, friendId string) (int, strin
 	}
 	f.FcmHandler.SubscribeToUser(parsed.friend.FcmToken, userId)
 	f.FcmHandler.SubscribeToUser(parsed.user.FcmToken, friendId)
-	f.FcmHandler.SendNotification(parsed.friend.FcmToken, fmt.Sprintf("%s accepted your friend request", parsed.user.Name))
+	f.FcmHandler.SendNotification(parsed.friend.FcmToken, fmt.Sprintf("%s accepted your friend request", parsed.user.Name), fmt.Sprintf("/profile/inspect/%s?from=/", parsed.friendRef.ID))
 
 	return 200, "Ok"
 }

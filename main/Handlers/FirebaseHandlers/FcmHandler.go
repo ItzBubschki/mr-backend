@@ -76,14 +76,16 @@ func (fcm *FcmHandler) UnsubscribeFromUser(token, topic string) {
 	log.Printf("%v tokens were not subscribed", response.FailureCount)
 }
 
-func (fcm *FcmHandler) SendNotification(token, content string) {
+func (fcm *FcmHandler) SendNotification(token, content, link string) {
 	if token == "" {
 		return
 	}
+	data, _ := json.Marshal(MessageData{Link: link})
 	result, err := fcm.Messaging.Send(context.Background(), &messaging.Message{
 		Token: token,
 		Data: map[string]string{
 			"title": content,
+			"body":  string(data),
 		},
 	})
 	if err != nil {
