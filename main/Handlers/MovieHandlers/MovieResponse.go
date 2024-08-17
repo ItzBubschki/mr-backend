@@ -1,12 +1,13 @@
 package MovieHandlers
 
 type MovieResponse struct {
-	Type          string
-	Title         string
-	Overview      string
-	StreamingInfo *struct {
-		De map[string][]platformAvailability
-	} `json:"streamingInfo,omitempty"`
+	Type     string
+	Title    string
+	Overview string
+	//StreamingInfo *struct {
+	//	De map[string][]platformAvailability
+	//} `json:"streamingInfo,omitempty"`
+	StreamingInfo map[string]map[string][]platformAvailability `json:"streamingInfo,omitempty"`
 	Year          int
 	IMDBRating    float64 `json:"imdbRating"`
 	IMDBID        string  `json:"imdbId"`
@@ -25,6 +26,7 @@ type MovieResponse struct {
 	PosterURLs                map[string]string
 	Tagline                   string
 	AdvisedMinimumAudienceAge int
+	Country                   string `json:"country,omitempty"`
 }
 
 type platformAvailability struct {

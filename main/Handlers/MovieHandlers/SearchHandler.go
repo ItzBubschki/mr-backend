@@ -16,8 +16,8 @@ type SearchHandler struct {
 	Mongo *MongoHandler
 }
 
-func (s *SearchHandler) searchForTerm(search string) []MovieResponse {
-	url := Handlers.SearchUrl + search
+func (s *SearchHandler) searchForTerm(search string, country string) []MovieResponse {
+	url := Handlers.SearchUrl + search + "&country=" + country
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("x-rapidapi-key", Handlers.ApiKey)
 	req.Header.Add("x-rapidapi-host", Handlers.ApiHost)
@@ -39,14 +39,29 @@ func (s *SearchHandler) searchForTerm(search string) []MovieResponse {
 		return []MovieResponse{}
 	}
 
-	go s.Mongo.SaveInCache(movieResponse.Result)
+	movies := movieResponse.Result
+	for i := range movies {
+		movies[i].Country = country
+	}
+
+	go s.Mongo.SaveInCache(movies)
 
 	return movieResponse.Result
 }
 
 func (s *SearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
-	movies := s.searchForTerm(search)
+	country := r.URL.Query().Get("country")
+	if search == "" {
+		http.Error(w, "Search term is required", http.StatusBadRequest)
+		return
+	}
+
+	if country == "" {
+		country = "de"
+	}
+
+	movies := s.searchForTerm(search, country)
 
 	// Convert response to JSON
 	jsonResponse, err := json.Marshal(movies)

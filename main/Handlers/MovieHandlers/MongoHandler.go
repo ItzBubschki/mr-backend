@@ -35,8 +35,13 @@ func NewMongoHandler(mongoHost string) (*MongoHandler, error) {
 	return handler, nil
 }
 
-func (m *MongoHandler) FetchFromCache(movieId string) (MovieResponse, error) {
-	filter := bson.M{"imdbid": movieId}
+func (m *MongoHandler) FetchFromCache(movieId string, country string) (MovieResponse, error) {
+	var filter bson.M
+	if country == "" {
+		filter = bson.M{"imdbid": movieId}
+	} else {
+		filter = bson.M{"imdbid": movieId, "country": country}
+	}
 	result := m.collection.FindOne(context.Background(), filter)
 	if err := result.Err(); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -56,10 +61,10 @@ func (m *MongoHandler) FetchFromCache(movieId string) (MovieResponse, error) {
 func (m *MongoHandler) SaveInCache(movies []MovieResponse) {
 	for _, movie := range movies {
 		// Check if a movie with the same imdbId already exists in the database
-		filter := bson.M{"imdbid": movie.IMDBID}
+		filter := bson.M{"imdbid": movie.IMDBID, "country": movie.Country}
 		existingMovie := m.collection.FindOne(context.Background(), filter)
 		if existingMovie.Err() == nil {
-			// A movie with the same imdbId already exists, skip saving
+			// A movie with the same imdbId and country already exists, skip saving
 			continue
 		}
 

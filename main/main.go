@@ -17,6 +17,7 @@ func main() {
 	emulator := flag.Bool("emulator", false, "whether to use the firebase emulator")
 	flag.Parse()
 	mongoHandler, err := MovieHandlers.NewMongoHandler(*mongoHost)
+	log.Println("mongoHost:", *mongoHost)
 	if err != nil {
 		log.Fatal("Failed to create MongoHandler:", err)
 	}

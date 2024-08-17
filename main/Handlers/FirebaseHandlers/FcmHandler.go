@@ -100,7 +100,7 @@ func (fcm *FcmHandler) sendNotificationToFriends(rating RatingEvent) {
 	if user.Friends == nil {
 		return
 	}
-	movieInfo, err := fcm.MongoHandler.FetchFromCache(rating.MovieID)
+	movieInfo, err := fcm.MongoHandler.FetchFromCache(rating.MovieID, "")
 	if err != nil {
 		log.Printf("Failed to fetch movie: %v", err)
 	}
